@@ -31,7 +31,7 @@ jobs:
 
     steps:
     - name: Checkout
-      uses: actions/checkout@v6.0.2
+      uses: actions/checkout@main
 
     - name: Show hardware info
       run: |
@@ -39,7 +39,7 @@ jobs:
         ./scripts/show_hardware_info.sh
 
     - name: Free disk space
-      uses: jlumbroso/free-disk-space@v1.3.1
+      uses: jlumbroso/free-disk-space@main
       with:
         tool-cache: true
         android: true
@@ -150,7 +150,7 @@ jobs:
            ls -la openwrt/.config
 
     - name: 自动上传最新源码生成.config编译配置
-      uses: actions/upload-artifact@v7
+      uses: actions/upload-artifact@main
       with:
        name: build-config
        path: |
@@ -183,7 +183,7 @@ jobs:
         echo "status=success" >> $GITHUB_OUTPUT
 
     - name: Upload firmware directory
-      uses: actions/upload-artifact@v7.0.0
+      uses: actions/upload-artifact@main
       if: steps.organize.outputs.status == 'success' && !cancelled()
       with:
         name: OpenWrt_firmware${{ env.DEVICE_NAME }}${{ env.FILE_DATE }}
@@ -206,7 +206,7 @@ jobs:
         echo "status=success" >> $GITHUB_OUTPUT
 
     - name: Upload firmware to release
-      uses: ncipollo/release-action@v1
+      uses: ncipollo/release-action@main
       if: steps.tag.outputs.status == 'success' && !cancelled()
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
