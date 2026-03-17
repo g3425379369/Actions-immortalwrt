@@ -10,7 +10,8 @@ on:
       ssh:
         description: 'SSH connection to Actions'
         required: false
-        default: 'false'
+        default: false
+        type: boolean
       profile:
         description: '选择要使用的配置文件'
         type: choice
