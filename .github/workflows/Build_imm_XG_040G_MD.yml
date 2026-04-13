@@ -18,7 +18,7 @@ on:
 env:
   CONFIG_FILE: 'config/040G.config'
   REPO_URL: https://github.com/xiangtailiang/openwrt
-  REPO_BRANCH: openwrt-25.12
+  REPO_BRANCH: main
   FEEDS_CONF: feeds.conf.default
   DIY_P4_SH: diy-part4.sh
   UPLOAD_FIRMWARE: true
