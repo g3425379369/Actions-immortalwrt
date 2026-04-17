@@ -1,0 +1,231 @@
+name: Build_XG_040G_MD-调试
+
+permissions:
+  contents: write
+  actions: write
+
+on:
+  workflow_dispatch:
+    inputs:
+      ssh:
+        description: ' ← 选择是否开启 SSH 调试专业人员使用'
+        required: false
+        default: false
+        type: boolean
+      log_switch:
+        description: "Build logs"
+        required: false
+        default: false
+        type: boolean
+      patch_type:
+        description: "选择补丁版本"
+        required: true
+        default: "patch-master"
+        type: choice
+        options:
+          - patch-bingoguo93-25.12
+          - patch-xiangtailiang-25.12
+          - patch-25.12.0-rc2
+          - patch-master
+
+
+
+env:
+  CONFIG_FILE: "config/040.config"
+  REPO_URL: https://github.com/immortalwrt/immortalwrt
+  REPO_BRANCH: openwrt-25.12
+  DIY_P4_SH: diy-part4.sh
+  UPLOAD_FIRMWARE: true
+  UPLOAD_RELEASE: true
+  TZ: Asia/Shanghai
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+            - name: Set dynamic branch and config
+        id: dynamic_config
+        run: |
+          if [[ "${{ inputs.patch_type }}" == "patch-master" ]]; then
+            echo "REPO_BRANCH=master" >> $GITHUB_ENV
+            echo "IS_MASTER_PATCH=true" >> $GITHUB_ENV
+          elif [[ "${{ inputs.patch_type }}" == "patch-25.12.0-rc2" ]]; then
+            echo "REPO_BRANCH=v25.12.0-rc2" >> $GITHUB_ENV
+            echo "IS_MASTER_PATCH=false" >> $GITHUB_ENV
+          else
+            echo "REPO_BRANCH=${{ env.REPO_BRANCH }}" >> $GITHUB_ENV
+            echo "IS_MASTER_PATCH=false" >> $GITHUB_ENV
+          fi
+
+
+      - name: Check remote branch for new commits
+        id: check_commit
+        run: |
+          LATEST_COMMIT=$(git ls-remote ${{ env.REPO_URL }} ${{ env.REPO_BRANCH }} | awk '{print $1}')
+          echo "LATEST_COMMIT=$LATEST_COMMIT" >> $GITHUB_ENV
+          echo "手动触发构建，跳过更新检查"
+          echo "should_build=true" >> $GITHUB_OUTPUT
+
+
+
+      - name: Initialization environment
+        id: init
+        env:
+        DEBIAN_FRONTEND: noninteractive
+        run: |
+        sudo -E apt-get -y update
+        sudo -E apt-get -y install $(curl -fsSL https://raw.githubusercontent.com/xuxin1955/depend_ubuntu2204_openwrt/refs/heads/main/depend_ubuntu2204_openwrt)
+
+      - name: mkbootimg build
+        run: |
+        wget https://github.com/xuxin1955/depend_ubuntu2204_openwrt/releases/download/ubuntu_26.04_LTS_mkbootimg/mkbootimg_34.0.5-12build1_all.deb
+        sudo dpkg -i mkbootimg_34.0.5-12build1_all.deb
+        sudo apt-get install -f -y
+        # 验证安装
+        mkbootimg --help || true
+        MKBOOTIMG_PATH=$(which mkbootimg)
+        if [ -n "$MKBOOTIMG_PATH" ]; then
+        echo "mkbootimg found at: $MKBOOTIMG_PATH"
+        file "$MKBOOTIMG_PATH"
+        else
+        echo "❌ mkbootimg not found in PATH!"
+        fi
+        
+        sudo timedatectl set-timezone "${TZ}"
+        echo "status=success" >> ${GITHUB_OUTPUT}
+
+      - name: Ensure Python build tools
+        run: |
+          python3 -m pip install --upgrade pip setuptools wheel
+          python3 -m pip install Unidecode
+
+      - name: Clone OpenWrt source code
+        run: |
+          git clone --depth 1 --branch "$REPO_BRANCH" "$REPO_URL" openwrt
+          cd openwrt
+          echo "COMMIT_HASH_FULL=$(git rev-parse HEAD)" >> $GITHUB_ENV
+          echo "COMMIT_HASH=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
+          echo "COMMIT_MSG=$(git log -1 --pretty=format:%s)" >> $GITHUB_ENV
+          echo "COMMIT_DATE=$(git log -1 --pretty=format:"%Y-%m-%d %H:%M:%S" --date=local)" >> $GITHUB_ENV
+
+      - name: Apply XG-040G-MD Patch Files
+        working-directory: ./openwrt
+        run: |
+          SELECTED_PATCH=${{ inputs.patch_type || 'patch-bingoguo93-25.12' }}
+          echo "SELECTED_PATCH=$SELECTED_PATCH" >> $GITHUB_ENV
+          
+          if [ -d "../$SELECTED_PATCH" ] && [ -f "../$SELECTED_PATCH/patch.sh" ]; then
+            echo "--- 正在应用补丁：$SELECTED_PATCH ---"
+            cp -r -f ../$SELECTED_PATCH .
+            chmod +x $SELECTED_PATCH/patch.sh
+            cd $SELECTED_PATCH && ./patch.sh
+            echo "--- 补丁应用成功 ---"
+          else
+            echo "错误: 未找到 $SELECTED_PATCH 补丁目录或脚本！"
+            exit 1
+          fi
+
+       - name: Load custom feeds
+         run: |
+           [ -e $FEEDS_CONF ] && mv $FEEDS_CONF openwrt/feeds.conf.default
+           chmod +x $DIY_P4_SH
+           cd openwrt
+           $GITHUB_WORKSPACE/$DIY_P4_SH
+
+       - name: Update & Install feeds
+         working-directory: ./openwrt
+         run: |
+           ./scripts/feeds update -a
+        
+           ./scripts/feeds install -a -f
+
+       - name: Configuration Customization
+         run: |
+      
+           cp -fv "${CONFIG_FILE}" openwrt/.config
+           cd openwrt && make defconfig
+           
+      - name: SSH 调试有效时间6h! 连接后输入q 输入exit即可退出，自动继续后续编译流程
+        uses: mxschmitt/action-tmate@master
+        if: ${{ inputs.ssh || contains(github.event.action, 'ssh') }}
+
+      - name: Upload build config files
+        uses: actions/upload-artifact@v6
+        with:
+          name: build-config
+          path: |
+            config/xg-040g-md.config
+            openwrt/defconfig-final.config
+            openwrt/.config
+            openwrt/feeds.conf.default
+
+      - name: Download packages
+        working-directory: ./openwrt
+        run: |
+          make download -j$(nproc) V=s
+          find dl -size -1024c -delete
+
+      - name: Compile OpenWrt firmware
+        id: compile
+        run: |
+          cd openwrt
+          if [[ "${{ inputs.log_switch }}" == "true" ]]; then
+            make -j1 V=s
+          else
+            make -j$(nproc) || make -j1 V=s
+          fi
+          
+          DEVICE_NAME=$(grep -o 'CONFIG_TARGET.*DEVICE_[^=]*=y' .config | head -1 | sed 's/.*DEVICE_\(.*\)=y/\1/')
+          [ -n "$DEVICE_NAME" ] && echo "DEVICE_NAME=_$DEVICE_NAME" >> $GITHUB_ENV
+          echo "FILE_DATE=_$(date +"%Y%m%d%H%M")" >> $GITHUB_ENV
+
+      - name: Organize firmware artifacts
+        if: env.UPLOAD_FIRMWARE == 'true'
+        run: |
+          cd openwrt/bin/targets/*/*
+          rm -rf packages
+          echo "FIRMWARE=$PWD" >> $GITHUB_ENV
+
+      - name: Upload firmware to Artifacts
+        uses: actions/upload-artifact@v6
+        if: env.UPLOAD_FIRMWARE == 'true'
+        with:
+          name: OpenWrt_firmware${{ env.DEVICE_NAME }}${{ env.FILE_DATE }}
+          path: ${{ env.FIRMWARE }}/*
+
+      - name: Generate release tag and notes
+        id: tag
+        if: env.UPLOAD_RELEASE == 'true'
+        run: |
+          echo "release_tag=$(date +"%Y.%m.%d-%H%M%S")" >> $GITHUB_OUTPUT
+          cat <<EOF > release.txt
+          🚀 XG-040G-MD 固件自动构建
+          ----------------------
+          设备型号: XG-040G-MD
+          构建时间: $(date +"%Y-%m-%d %H:%M")
+          源码仓库: ${{ env.REPO_URL }}
+          分支/Tag: ${{ env.REPO_BRANCH }}
+          使用补丁: ${{ env.SELECTED_PATCH }}
+          EOF
+
+      - name: Publish GitHub Release
+        uses: ncipollo/release-action@v1
+        if: env.UPLOAD_RELEASE == 'true'
+        with:
+          tag: ${{ steps.tag.outputs.release_tag }}
+          bodyFile: release.txt
+          artifacts: "${{ env.FIRMWARE }}/*"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Cleanup workflow runs
+        uses: Mattraks/delete-workflow-runs@v2
+        with:
+          retain_days: 7
+          keep_minimum_runs: 5
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
