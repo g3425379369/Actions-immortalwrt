@@ -261,7 +261,8 @@ jobs:
       - name: Cleanup workflow runs
         uses: Mattraks/delete-workflow-runs@v2
         with:
-          retain_days: 7
-          keep_minimum_runs: 5
+         retain_days: 7
+         keep_minimum_runs: 5
+         workflow_file_name: ${{ github.workflow }}.yml
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
