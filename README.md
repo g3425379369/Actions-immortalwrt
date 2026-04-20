@@ -67,10 +67,11 @@ Bus 001 Device 015: ID 3625:0110 AICSemi AIC8800DC
 7628N模块
 ![7628N模块](https://raw.githubusercontent.com/xuxin1955/Actions-immortalwrt/main/pics/GIF_20260417_073543.gif)
 
-7628N刷机命令
+7628N刷机命令 自己按照自己固件名字对应修正！！！
 
 
 ssh推送刷机命令参考！！！
+
 保配置刷机命令 cat immortalwrt-ramips-mt76x8-hilink_hlk-7628n-squashfs-sysupgrade.bin | ssh root@192.168.1.1 "cat > /tmp/fw.bin && sysupgrade /tmp/fw.bin"
 
 
