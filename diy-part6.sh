@@ -10,7 +10,8 @@ mkdir -p target/linux/ramips/image/
 cp -f "$GITHUB_WORKSPACE/scripts/image/mt76x8.mk" "target/linux/ramips/image/mt76x8.mk"
 
 # hlk7628dna board.d
-mkdir -p target/linux/ramips/mt76x8/base-files/etc/board.d && cp -f "$GITHUB_WORKSPACE/scripts/board.d/02_network" target/linux/ramips/mt76x8/base-files/etc/board.d/02_network
+mkdir -p target/linux/ramips/mt76x8/base-files/etc/board.d/
+cp -f "$GITHUB_WORKSPACE/scripts/image/02_network" target/linux/ramips/mt76x8/base-files/etc/board.d/02_network
 
 
 
