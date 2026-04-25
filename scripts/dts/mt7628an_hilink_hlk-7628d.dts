@@ -23,6 +23,16 @@
 			linux,code = <KEY_RESTART>;
 		};
 	};
+
+	leds {
+		compatible = "gpio-leds";
+
+		wlan {
+			function = LED_FUNCTION_WLAN;
+			color = <LED_COLOR_ID_GREEN>;
+			gpios = <&gpio 44 GPIO_ACTIVE_LOW>;
+		};
+	};
 };
 
 &state_default {
@@ -42,7 +52,7 @@
 	flash@0 {
 		compatible = "jedec,spi-nor";
 		reg = <0>;
-		spi-max-frequency = <15000000>;
+		spi-max-frequency = <40000000>;
 		broken-flash-reset;
 
 		partitions {
@@ -96,9 +106,16 @@
 	nvmem-cell-names = "mac-address";
 };
 
+&esw {
+	mediatek,portmap = <0x3e>;
+};
+
 &wmac {
 	status = "okay";
 
 	nvmem-cells = <&eeprom_factory_0>;
 	nvmem-cell-names = "eeprom";
+
+	country-code = <0x43>;
 };
+
