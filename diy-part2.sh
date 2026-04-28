@@ -17,6 +17,10 @@ git clone https://github.com/lkiuyu/luci-app-temp-status package/luci-app-temp-s
 # DbusSmsForwardCPlus
 git clone https://github.com/lkiuyu/DbusSmsForwardCPlus package/DbusSmsForwardCPlus
 
+# test
+sed -i 's/DEPENDS:=+glib2/DEPENDS:=+glib2 +glib2-gio +glib2-gobject +glib2-core/' feeds/packages/libs/libmbim/Makefile
+
+
 
 
 
