@@ -189,12 +189,25 @@ jobs:
 
     - name: Download package
       run: |
-        [ "${{ steps.cache-dl.outputs.cache-hit }}" = "true" ] && echo "✅ dl cache hit" || echo "⚠️ dl cache miss"
+        if [ "${{ steps.cache-dl.outputs.cache-hit }}" = "true" ]; then
+          echo "✅ dl cache hit"
+        else
+          echo "⚠️ dl cache miss"
+        fi
 
         cd openwrt
-        make download -j$(nproc) V=s
-        find dl -size -1024c -exec ls -l {} \;
-        find dl -size -1024c -exec rm -f {} \;
+
+        echo "⬇️ Downloading..."
+        output=$(make download -j$(nproc) -k V=s 2>&1)
+
+        echo "❌ Failed packages and their logs:"
+        find dl -size -1024c 2>/dev/null | while read f; do
+          pkg=$(basename "$f" | sed 's/\..*//')
+          echo ""
+          echo "🔍 $pkg"
+          echo "$output" | grep -A10 -B5 "$pkg" || true
+        done
+
        
     - name: Compile the firmware
       id: compile
