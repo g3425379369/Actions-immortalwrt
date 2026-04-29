@@ -45,4 +45,4 @@ sed -i 's|src-git-full openstick https://github.com/lkiuyu/openstick-feeds.git|s
 # EOF
 
 # inspect
-grep -c "opp-microvolt" target/linux/msm89xx/dts/msm8916.dtsi
+echo ">>> OPP VOLTAGE COUNT: $(grep -c 'opp-microvolt' target/linux/msm89xx/dts/msm8916.dtsi) <<<"
