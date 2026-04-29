@@ -43,3 +43,6 @@ sed -i 's|src-git-full openstick https://github.com/lkiuyu/openstick-feeds.git|s
 # src-git video https://github.com/openwrt/video.git;openwrt-25.12
 # src-git-full openstick https://github.com/xuxin1955/openstick-feeds.git
 # EOF
+
+# inspect
+grep -c "opp-microvolt" target/linux/msm89xx/dts/msm8916.dtsi
