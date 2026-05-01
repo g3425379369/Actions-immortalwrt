@@ -248,7 +248,13 @@ jobs:
         restore-keys: |
           toolchain-${{ runner.os }}-
 
-
+    - name: Cache compiled ipk packages
+      uses: actions/cache@v5
+      with:
+        path: openwrt/bin/packages
+        key: ipk-${{ runner.os }}-${{ hashFiles('openwrt/.config') }}
+        restore-keys: |
+          ipk-${{ runner.os }}-
        
     - name: Compile the firmware
       id: compile
@@ -267,7 +273,10 @@ jobs:
 
         echo "✅ ccache 统计："
         ccache -s
-
+        echo "📂 编译生成的ipk目录："
+        ls -lh bin/packages
+        find bin/packages -name "*.ipk" | head -10
+        
         echo "status=success" >> $GITHUB_OUTPUT
         grep '^CONFIG_TARGET.*DEVICE.*=y' .config | sed -r 's/.*DEVICE_(.*)=y/\1/' > DEVICE_NAME
         [ -s DEVICE_NAME ] && echo "DEVICE_NAME=_$(cat DEVICE_NAME)" >> $GITHUB_ENV
