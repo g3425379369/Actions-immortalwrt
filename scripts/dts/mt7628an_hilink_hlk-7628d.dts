@@ -125,7 +125,3 @@
 
 	country-code = <0x43>;
 };
-
-&leds {
-	status = "okay";
-};

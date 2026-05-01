@@ -112,7 +112,7 @@ jobs:
         ln -sfn /mnt/openwrt/build_dir openwrt/build_dir
         df -H
         
-    - name: Load custom feeds
+    - name: feeds DIY_P3_SH
       run: |
         [ -e $FEEDS_CONF ] && mv $FEEDS_CONF openwrt/feeds.conf.default
         chmod +x $DIY_P3_SH
