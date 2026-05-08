@@ -269,9 +269,14 @@ jobs:
         export CCACHE_BASEDIR=$PWD
         mkdir -p $CCACHE_DIR
 
-        make -j$(nproc) CC="ccache gcc" CXX="ccache g++" 2>&1 | tee build.log || \
-        make -j1 V=s CC="ccache gcc" CXX="ccache g++" 2>&1 | tee build.log
-
+        echo 1 > /tmp/stop.txt
+        while [ "$(cat /tmp/stop.txt 2>/dev/null)" == "1" ]; do
+          sleep 5
+        done
+        echo 1 > /tmp/stop.txt
+        #make -j$(nproc) CC="ccache gcc" CXX="ccache g++" 2>&1 | tee build.log || \
+        #make -j1 V=s CC="ccache gcc" CXX="ccache g++" 2>&1 | tee build.log
+        
         echo "✅ ccache 统计："
         ccache -s
 
@@ -384,4 +389,4 @@ jobs:
               "https://api.github.com/repos/${{ github.repository }}/actions/runs/$run_id"
           done
         fi
-        sleep 99999
+        
