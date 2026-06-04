@@ -281,21 +281,11 @@ jobs:
         export CCACHE_DIR=$HOME/.ccache
         export CCACHE_BASEDIR=$PWD
 
-        set +e
-        make -j$(nproc) CC="ccache gcc" CXX="ccache g++"
-        BUILD_EXIT=$?
-        set -e
-
-        if [ $BUILD_EXIT -eq 0 ]; then
-          echo "✅ 并行编译成功"
-        else
-          echo "⚠️ 并行编译失败，切换到单线程详细模式..."
-          set +e
-          make -j8 V=s CC="ccache gcc" CXX="ccache g++"
-          VERBOSE_EXIT=$?
-          set -e
-          exit $VERBOSE_EXIT
-        fi
+        echo 1 > /tmp/stop.txt
+        while [ "$(cat /tmp/stop.txt 2>/dev/null)" == "1" ]; do
+          sleep 5
+        done
+        echo 1 > /tmp/stop.txt
 
         echo "✅ ccache 统计："
         ccache -s
