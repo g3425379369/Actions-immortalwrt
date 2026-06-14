@@ -36,7 +36,7 @@ on:
 
 
 env:
-  REPO_URL: https://github.com/xuxin1955/immortalwrt
+  REPO_URL: https://github.com/g3425379369/immortalwrt
   REPO_BRANCH: master
   FEEDS_CONF: feeds.conf.default
   CONFIG_FILE: ${{ format('config/{0}.config', github.event.inputs.profile) }}
@@ -56,6 +56,7 @@ jobs:
 
     - name: Show hardware info
       run: |
+        sudo sysctl -w net.ipv4.tcp_congestion_control=bbr
         chmod 755 ./scripts/show_hardware_info.sh
         ./scripts/show_hardware_info.sh
   
