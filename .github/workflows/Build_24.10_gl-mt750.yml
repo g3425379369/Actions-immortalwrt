@@ -17,7 +17,7 @@ on:
 
 env:
   CONFIG_FILE: 'config/mt750.config'
-  REPO_URL: https://github.com/immortalwrt/immortalwrt
+  REPO_URL: https://github.com/istoreos/istoreos
   REPO_BRANCH: openwrt-24.10
   FEEDS_CONF: feeds.conf.default
   DIY_P7_SH: diy-part7.sh
