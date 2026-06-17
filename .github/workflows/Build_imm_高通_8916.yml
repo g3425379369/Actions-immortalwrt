@@ -36,7 +36,7 @@ on:
 
 
 env:
-  REPO_URL: https://github.com/g3425379369/imm8916
+  REPO_URL: https://github.com/g3425379369/immortalwrt
   REPO_BRANCH: master
   FEEDS_CONF: feeds.conf.default
   CONFIG_FILE: ${{ format('config/{0}.config', github.event.inputs.profile) }}
