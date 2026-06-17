@@ -12,7 +12,7 @@ git clone https://github.com/lkiuyu/DbusSmsForwardCPlus package/DbusSmsForwardCP
 
 git clone https://github.com/gSpotx2f/luci-app-cpu-perf.git package/luci-app-cpu-perf
 
-git clone https://github.com/g3425379369/luci-app-cpu-status.git package/luci-app-cpu-status
+git clone https://github.com/gSpotx2f/luci-app-cpu-status.git package/luci-app-cpu-status
 
 # 北大源
 cp -r "$GITHUB_WORKSPACE/scripts/files-8916" "$GITHUB_WORKSPACE/openwrt/files"
