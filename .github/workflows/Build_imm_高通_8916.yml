@@ -131,7 +131,7 @@ jobs:
       working-directory: /mnt
       run: |
         df -hT $PWD
-        git clone $REPO_URL -b $REPO_BRANCH openwrt
+        git clone --depth 1 $REPO_URL -b $REPO_BRANCH openwrt
         ln -sf /mnt/openwrt $GITHUB_WORKSPACE/openwrt
 
     - name: Load custom DIY_P1_SH
