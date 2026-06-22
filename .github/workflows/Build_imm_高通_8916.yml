@@ -291,7 +291,24 @@ jobs:
         #   sleep 5
         # done
 
-        yes "" | make -j$(nproc) CC="ccache gcc" CXX="ccache g++" V=s
+        expect << 'EOF'
+        set timeout 10
+        set cpus [exec nproc]
+        set my_command [list make "-j$cpus" "CC=ccache gcc" "CXX=ccache g++" "V=s"]
+        spawn {*}$my_command
+        while {1} {
+            expect {
+                timeout {
+                    send "\r"
+                }
+                eof {
+                    break
+                }
+            }
+        }
+        set exit_result [wait]
+        exit [lindex $exit_result 3]
+        EOF
         
         echo "✅ ccache 统计："
         ccache -s
