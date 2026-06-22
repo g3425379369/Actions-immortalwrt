@@ -280,16 +280,18 @@ jobs:
         export CCACHE_DIR=$HOME/.ccache
         export CCACHE_BASEDIR=$PWD
         
-        echo -1 > /tmp/status.txt
+        # echo -1 > /tmp/status.txt
         
-        ((echo -e '\n\n\n\n\n\n\n\n\n\n' | make -j$(nproc) CC="ccache gcc" CXX="ccache g++" V=s) && echo 0 > /tmp/status.txt || echo 1 > /tmp/status.txt) &
+        # ((echo -e '\n\n\n\n\n\n\n\n\n\n' | make -j$(nproc) CC="ccache gcc" CXX="ccache g++" V=s) && echo 0 > /tmp/status.txt || echo 1 > /tmp/status.txt) &
 
-        while [ "$(cat /tmp/status.txt 2>/dev/null)" == "-1" ]; do
-          if [ "$(cat /tmp/status.txt 2>/dev/null)" == "1" ]; then
-            exit 1
-          fi
-          sleep 5
-        done
+        # while [ "$(cat /tmp/status.txt 2>/dev/null)" == "-1" ]; do
+        #   if [ "$(cat /tmp/status.txt 2>/dev/null)" == "1" ]; then
+        #     exit 1
+        #   fi
+        #   sleep 5
+        # done
+
+        (echo -e '\n\n\n\n\n\n\n\n\n\n' | make -j$(nproc) CC="ccache gcc" CXX="ccache g++" V=s) > /dev/null
         
         echo "✅ ccache 统计："
         ccache -s
