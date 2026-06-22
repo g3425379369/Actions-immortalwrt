@@ -291,7 +291,7 @@ jobs:
         #   sleep 5
         # done
 
-        (echo -e '\n\n\n\n\n\n\n\n\n\n' | make -j1 CC="ccache gcc" CXX="ccache g++" V=s) > /dev/null
+        yes "" | make -j$(nproc) CC="ccache gcc" CXX="ccache g++" V=s
         
         echo "✅ ccache 统计："
         ccache -s
