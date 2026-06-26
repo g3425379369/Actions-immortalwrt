@@ -15,5 +15,5 @@ git clone https://github.com/gSpotx2f/luci-app-cpu-status.git package/luci-app-c
 git clone https://github.com/gSpotx2f/luci-app-temp-status.git package/luci-app-temp-status
 
 # 北大源
-#cp -r "$GITHUB_WORKSPACE/scripts/files-8916" "$GITHUB_WORKSPACE/openwrt/files"
-#ls -R "$GITHUB_WORKSPACE/openwrt/files"
+cp -r "$GITHUB_WORKSPACE/scripts/files-8916" "$GITHUB_WORKSPACE/openwrt/files"
+ls -R "$GITHUB_WORKSPACE/openwrt/files"
