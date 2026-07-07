@@ -16,6 +16,9 @@ git clone https://github.com/gSpotx2f/luci-app-temp-status.git package/luci-app-
 
 git clone https://github.com/g3425379369/UA3F.git package/UA3F
 
+rm package/feeds/packages/mosdns
+git clone https://github.com/sbwml/luci-app-mosdns.git package/luci-app-mosdns
+
 # 北大源
 cp -r "$GITHUB_WORKSPACE/scripts/files-8916" "$GITHUB_WORKSPACE/openwrt/files"
 ls -R "$GITHUB_WORKSPACE/openwrt/files"
