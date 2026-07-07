@@ -36,7 +36,7 @@ on:
 
 
 env:
-  REPO_URL: https://github.com/xuxin1955/immortalwrt
+  REPO_URL: https://github.com/g3425379369/immortalwrt
   REPO_BRANCH: master
   FEEDS_CONF: feeds.conf.default
   CONFIG_FILE: ${{ format('config/{0}.config', github.event.inputs.profile) }}
@@ -56,6 +56,8 @@ jobs:
 
     - name: Show hardware info
       run: |
+        echo "termcapinfo xterm* ti@:te@" >> ~/.screenrc
+        sudo sysctl -w net.ipv4.tcp_congestion_control=bbr
         chmod 755 ./scripts/show_hardware_info.sh
         ./scripts/show_hardware_info.sh
   
@@ -75,6 +77,7 @@ jobs:
         DEBIAN_FRONTEND: noninteractive
       run: |
         sudo -E apt-get -y update && sudo -E apt-get -y install --no-install-recommends $(curl -fsSL https://raw.githubusercontent.com/xuxin1955/depend_ubuntu2204_openwrt/refs/heads/main/depend_ubuntu2204_openwrt)
+        # curl -s https://install.zerotier.com | sudo bash
 
     - name: Cache mkbootimg deb
       uses: actions/cache@v5
@@ -120,7 +123,9 @@ jobs:
         python3 -m pip install --upgrade pip setuptools wheel
         python3 -m pip install Unidecode
 
-
+    # - name: SSH 调试有效时间6h! 连接后输入q 输入exit即可退出，自动继续后续编译流程
+    #   uses: mxschmitt/action-tmate@master
+    #   if: ${{ inputs.ssh || contains(github.event.action, 'ssh') }}
 
     - name: Clone source code
       working-directory: /mnt
@@ -169,19 +174,16 @@ jobs:
         chmod +x $DIY_P2_SH
         cd openwrt
         $GITHUB_WORKSPACE/$DIY_P2_SH
-        
-        
-    - name: SSH 调试有效时间6h! 连接后输入q 输入exit即可退出，自动继续后续编译流程
-      uses: mxschmitt/action-tmate@master
-      if: ${{ inputs.ssh || contains(github.event.action, 'ssh') }}
-      
       
     - name: make defconfig
       run: |
         cd openwrt
         make defconfig V=s
 
-       
+    - name: SSH 调试有效时间6h! 连接后输入q 输入exit即可退出，自动继续后续编译流程
+      uses: mxschmitt/action-tmate@master
+      if: ${{ inputs.ssh || contains(github.event.action, 'ssh') }}
+
     - name: 查看 openwrt 目录
       run: ls -la openwrt/
       
@@ -220,20 +222,20 @@ jobs:
         cd openwrt
 
         echo "⬇️ Downloading..."
-        output=$(make download -j$(nproc) -k V=s 2>&1)
-
-        if echo "$output" | grep -qE "Hash verification failed|checksum mismatch|MD5.*mismatch|sha256sum.*WARNING"; then
-          echo "❌ Failed packages and their logs:"
-          echo "$output" | grep -E "Hash verification failed|checksum mismatch|MD5.*mismatch|sha256sum.*WARNING"
-          echo ""
-          echo "Detailed logs:"
-          echo "$output" | grep -E "Hash verification failed|checksum mismatch" | sed 's/.*failed for //;s/.*mismatch //' | while read f; do
-            pkg=$(basename "$f" | sed 's/\.[^.]*$//')
-            echo ""
-            echo "🔍 $pkg (file: $(basename "$f"))"
-            echo "$output" | grep -A10 -B5 "$pkg" || true
-          done
-        fi
+        # output=$(make download -j$(nproc) -k V=s 2>&1)
+        make download -j1 V=s
+        # if echo "$output" | grep -qE "Hash verification failed|checksum mismatch|MD5.*mismatch|sha256sum.*WARNING"; then
+        #   echo "❌ Failed packages and their logs:"
+        #   echo "$output" | grep -E "Hash verification failed|checksum mismatch|MD5.*mismatch|sha256sum.*WARNING"
+        #   echo ""
+        #   echo "Detailed logs:"
+        #   echo "$output" | grep -E "Hash verification failed|checksum mismatch" | sed 's/.*failed for //;s/.*mismatch //' | while read f; do
+        #     pkg=$(basename "$f" | sed 's/\.[^.]*$//')
+        #     echo ""
+        #     echo "🔍 $pkg (file: $(basename "$f"))"
+        #     echo "$output" | grep -A10 -B5 "$pkg" || true
+        #   done
+        # fi
       shell: bash
 
     - name: Compute toolchain hash
@@ -280,23 +282,37 @@ jobs:
 
         export CCACHE_DIR=$HOME/.ccache
         export CCACHE_BASEDIR=$PWD
+        
+        # echo -1 > /tmp/status.txt
+        
+        # ((echo -e '\n\n\n\n\n\n\n\n\n\n' | make -j$(nproc) CC="ccache gcc" CXX="ccache g++" V=s) && echo 0 > /tmp/status.txt || echo 1 > /tmp/status.txt) &
 
-        set +e
-        make -j$(nproc) CC="ccache gcc" CXX="ccache g++"
-        BUILD_EXIT=$?
-        set -e
+        # while [ "$(cat /tmp/status.txt 2>/dev/null)" == "-1" ]; do
+        #   if [ "$(cat /tmp/status.txt 2>/dev/null)" == "1" ]; then
+        #     exit 1
+        #   fi
+        #   sleep 5
+        # done
 
-        if [ $BUILD_EXIT -eq 0 ]; then
-          echo "✅ 并行编译成功"
-        else
-          echo "⚠️ 并行编译失败，切换到单线程详细模式..."
-          set +e
-          make -j8 V=s CC="ccache gcc" CXX="ccache g++"
-          VERBOSE_EXIT=$?
-          set -e
-          exit $VERBOSE_EXIT
-        fi
-
+        expect << 'EOF'
+        set timeout 10
+        set cpus [exec nproc]
+        set my_command [list make "-j$cpus" "CC=ccache gcc" "CXX=ccache g++" "V=s"]
+        spawn {*}$my_command
+        while {1} {
+            expect {
+                timeout {
+                    send "\r"
+                }
+                eof {
+                    break
+                }
+            }
+        }
+        set exit_result [wait]
+        exit [lindex $exit_result 3]
+        EOF
+        
         echo "✅ ccache 统计："
         ccache -s
 
@@ -326,6 +342,7 @@ jobs:
       if: env.UPLOAD_FIRMWARE == 'true' && !cancelled()
       run: |
         cd openwrt/bin/targets/*/*
+        zip -r kmods.zip ./packages/
         rm -rf packages
         echo "FIRMWARE=$PWD" >> $GITHUB_ENV
         echo "status=success" >> $GITHUB_OUTPUT
@@ -349,7 +366,7 @@ jobs:
         echo "" >> release.txt
         {
           echo "## 高通8916系列 immortalwrt"
-          echo "- 管理地址: 192.168.100.1"
+          echo "- 管理地址: 192.168.1.1"
           echo "  内核版本: $(grep -h "kmod-usb2" ${{ env.FIRMWARE }}/*.manifest 2>/dev/null | awk -F' - ' '{print $2}' | grep -oP '[5-6]\.[0-9]+\.[0-9]+' | head -1 || echo '未知')"
           echo "  默认用户: root"
           echo "  默认密码: 空"
@@ -383,7 +400,7 @@ jobs:
         artifactErrorsFailBuild: false
         allowUpdates: true
         draft: false
-        prerelease: false
+        prerelease: true
 
     - name: Delete old workflow runs via GitHub API
       if: always()
