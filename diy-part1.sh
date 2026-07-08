@@ -4,6 +4,9 @@
 mkdir -p target/linux/msm89xx/dts/
 cp -f "$GITHUB_WORKSPACE/scripts/dts/msm8916.dtsi" "target/linux/msm89xx/dts/msm8916.dtsi"
 
+# modify mirror
+cp -f "$GITHUB_WORKSPACE/scripts/projectsmirrors.json" "scripts/projectsmirrors.json"
+
 # OpenClash
 # git clone --depth 1 https://github.com/vernesong/OpenClash.git OpenClash
 
