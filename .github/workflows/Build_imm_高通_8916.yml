@@ -77,7 +77,6 @@ jobs:
         DEBIAN_FRONTEND: noninteractive
       run: |
         sudo -E apt-get -y update && sudo -E apt-get -y install --no-install-recommends $(curl -fsSL https://raw.githubusercontent.com/xuxin1955/depend_ubuntu2204_openwrt/refs/heads/main/depend_ubuntu2204_openwrt)
-        # curl -s https://install.zerotier.com | sudo bash
 
     - name: Cache mkbootimg deb
       uses: actions/cache@v5
@@ -123,10 +122,6 @@ jobs:
         python3 -m pip install --upgrade pip setuptools wheel
         python3 -m pip install Unidecode
 
-    # - name: SSH 调试有效时间6h! 连接后输入q 输入exit即可退出，自动继续后续编译流程
-    #   uses: mxschmitt/action-tmate@master
-    #   if: ${{ inputs.ssh || contains(github.event.action, 'ssh') }}
-
     - name: Clone source code
       working-directory: /mnt
       run: |
@@ -162,7 +157,6 @@ jobs:
         cd openwrt
         ./scripts/feeds install -a -f
 
-
     - name: remove warning
       run: |
         chmod 755 $GITHUB_WORKSPACE/scripts/diy-part.sh
@@ -191,7 +185,6 @@ jobs:
       
            ls -la openwrt/.config
 
- 
     - name: 自动上传最新源码生成.config编译配置
       uses: actions/upload-artifact@main
       with:
@@ -210,7 +203,6 @@ jobs:
         restore-keys: |
           dl-${{ runner.os }}-
 
-
     - name: Download package
       run: |
         if [[ "${{ steps.cache-dl.outputs.cache-hit }}" == "true" ]]; then
@@ -222,20 +214,7 @@ jobs:
         cd openwrt
 
         echo "⬇️ Downloading..."
-        # output=$(make download -j$(nproc) -k V=s 2>&1)
         make download -j1 V=s
-        # if echo "$output" | grep -qE "Hash verification failed|checksum mismatch|MD5.*mismatch|sha256sum.*WARNING"; then
-        #   echo "❌ Failed packages and their logs:"
-        #   echo "$output" | grep -E "Hash verification failed|checksum mismatch|MD5.*mismatch|sha256sum.*WARNING"
-        #   echo ""
-        #   echo "Detailed logs:"
-        #   echo "$output" | grep -E "Hash verification failed|checksum mismatch" | sed 's/.*failed for //;s/.*mismatch //' | while read f; do
-        #     pkg=$(basename "$f" | sed 's/\.[^.]*$//')
-        #     echo ""
-        #     echo "🔍 $pkg (file: $(basename "$f"))"
-        #     echo "$output" | grep -A10 -B5 "$pkg" || true
-        #   done
-        # fi
       shell: bash
 
     - name: Compute toolchain hash
@@ -273,7 +252,6 @@ jobs:
         echo "max_size = 10G" > $HOME/.ccache/ccache.conf
         echo "compiler_check = string:${{ steps.tc_hash.outputs.hash }}" >> $HOME/.ccache/ccache.conf
 
-       
     - name: make -j$(nproc)
       id: compile
       run: |
@@ -283,36 +261,8 @@ jobs:
         export CCACHE_DIR=$HOME/.ccache
         export CCACHE_BASEDIR=$PWD
         
-        # echo -1 > /tmp/status.txt
-        
-        # ((echo -e '\n\n\n\n\n\n\n\n\n\n' | make -j$(nproc) CC="ccache gcc" CXX="ccache g++" V=s) && echo 0 > /tmp/status.txt || echo 1 > /tmp/status.txt) &
+        make -j$(nproc) CC="ccache gcc" CXX="ccache g++"
 
-        # while [ "$(cat /tmp/status.txt 2>/dev/null)" == "-1" ]; do
-        #   if [ "$(cat /tmp/status.txt 2>/dev/null)" == "1" ]; then
-        #     exit 1
-        #   fi
-        #   sleep 5
-        # done
-
-        expect << 'EOF'
-        set timeout 10
-        set cpus [exec nproc]
-        set my_command [list make "-j$cpus" "CC=ccache gcc" "CXX=ccache g++" "V=s"]
-        spawn {*}$my_command
-        while {1} {
-            expect {
-                timeout {
-                    send "\r"
-                }
-                eof {
-                    break
-                }
-            }
-        }
-        set exit_result [wait]
-        exit [lindex $exit_result 3]
-        EOF
-        
         echo "✅ ccache 统计："
         ccache -s
 
@@ -321,10 +271,6 @@ jobs:
         [ -s DEVICE_NAME ] && echo "DEVICE_NAME=_$(cat DEVICE_NAME)" >> $GITHUB_ENV
         echo "FILE_DATE=_$(date +"%Y%m%d%H%M")" >> $GITHUB_ENV
       shell: bash
-
-
-
-
 
     - name: df -hT
       if: (!cancelled())
@@ -385,8 +331,6 @@ jobs:
         echo "Collected files:"
         cat file_list.txt
         test -s file_list.txt || { echo "::error::No firmware files found"; exit 1; }
-
-
 
     - name: Upload firmware to release
       if: env.UPLOAD_RELEASE == 'true' && steps.organize.outputs.status == 'success'
