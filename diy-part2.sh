@@ -19,6 +19,10 @@ git clone https://github.com/g3425379369/UA3F.git package/UA3F
 rm package/feeds/packages/mosdns
 git clone https://github.com/sbwml/luci-app-mosdns.git package/luci-app-mosdns
 
-# 北大源
+# modify
 cp -r "$GITHUB_WORKSPACE/scripts/files-8916" "$GITHUB_WORKSPACE/openwrt/files"
 ls -R "$GITHUB_WORKSPACE/openwrt/files"
+
+# modify r8152 version
+rm -f "$GITHUB_WORKSPACE/openwrt/package/kernel/r8152"
+cp -r "$GITHUB_WORKSPACE/scripts/r8152" "$GITHUB_WORKSPACE/openwrt/package/kernel/r8152"
