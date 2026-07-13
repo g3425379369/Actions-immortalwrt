@@ -313,7 +313,8 @@ jobs:
         {
           echo "## 高通8916系列 immortalwrt"
           echo "- 管理地址: 192.168.1.1"
-          echo "  内核版本: $(grep -h "^kernel - " ${{ env.FIRMWARE }}/*.manifest 2>/dev/null | awk -F' - ' '{print $2}' || echo '未知')"          echo "  默认用户: root"
+          echo "  内核版本: $(grep -h "^kernel - " ${{ env.FIRMWARE }}/*.manifest 2>/dev/null | awk -F' - ' '{print $2}' || echo '未知')"
+          echo "  默认用户: root"
           echo "  默认密码: 空"
           echo ""
           echo "### 主要插件"
