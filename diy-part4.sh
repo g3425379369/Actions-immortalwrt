@@ -13,5 +13,5 @@ rm package/feeds/packages/mosdns
 git clone https://github.com/sbwml/luci-app-mosdns.git package/luci-app-mosdns
 
 # modify
-cp -rf "$GITHUB_WORKSPACE/scripts/imm_xg-040-md_ubi/" "$GITHUB_WORKSPACE/openwrt/"
+cp -rf "$GITHUB_WORKSPACE/scripts/imm_xg-040-md_ubi/"* "$GITHUB_WORKSPACE/openwrt/"
 ls -R "$GITHUB_WORKSPACE/openwrt/files"
