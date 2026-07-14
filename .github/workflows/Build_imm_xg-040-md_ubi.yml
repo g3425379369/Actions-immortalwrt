@@ -16,7 +16,7 @@ on:
         type: boolean
 
 env:
-  REPO_URL: https://github.com/g3425379369/immortalwrt
+  REPO_URL: https://github.com/immortalwrt/immortalwrt
   REPO_BRANCH: master
   FEEDS_CONF: feeds.conf.default
   CONFIG_FILE: config/xg-040-md_ubi.config
