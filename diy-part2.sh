@@ -20,9 +20,9 @@ rm package/feeds/packages/mosdns
 git clone https://github.com/sbwml/luci-app-mosdns.git package/luci-app-mosdns
 
 # modify
-cp -r "$GITHUB_WORKSPACE/scripts/files-8916" "$GITHUB_WORKSPACE/openwrt/files"
+rm -f "$GITHUB_WORKSPACE/openwrt/package/kernel/r8152"
+cp -rf "$GITHUB_WORKSPACE/scripts/imm_8916/" "$GITHUB_WORKSPACE/openwrt/"
 ls -R "$GITHUB_WORKSPACE/openwrt/files"
 
-# modify r8152 version
-rm -f "$GITHUB_WORKSPACE/openwrt/package/kernel/r8152"
-cp -r "$GITHUB_WORKSPACE/scripts/r8152" "$GITHUB_WORKSPACE/openwrt/package/kernel/r8152"
+# inspect
+echo ">>> OPP VOLTAGE COUNT: $(grep -c 'opp-microvolt' target/linux/msm89xx/dts/msm8916.dtsi) <<<"
