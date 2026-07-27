@@ -17,7 +17,10 @@ git clone https://github.com/gSpotx2f/luci-app-temp-status.git package/luci-app-
 git clone https://github.com/g3425379369/UA3F.git package/UA3F
 
 rm package/feeds/packages/mosdns
-git clone https://github.com/sbwml/luci-app-mosdns.git package/luci-app-mosdns
+git clone https://github.com/sbwml/luci-app-mosdns.git package/mosdns
+
+rm package/feeds/packages/v2ray-geodata
+git clone https://github.com/sbwml/v2ray-geodata package/v2ray-geodata
 
 # modify
 rm -rf "$GITHUB_WORKSPACE/openwrt/package/kernel/r8152"
