@@ -112,7 +112,7 @@ jobs:
           echo "❌ mkbootimg not found in PATH!"
         fi
 
-        sudo timedatectl set-timezone "$TZ"
+        sudo timedatectl set-timezone Asia/Shanghai
         sudo chmod 777 /mnt
         df -hT
 
