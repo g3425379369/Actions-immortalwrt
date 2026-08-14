@@ -36,7 +36,7 @@ on:
 
 
 env:
-  REPO_URL: https://github.com/xuxin1955/immortalwrt
+  REPO_URL: https://github.com/g3425379369/immortalwrt
   REPO_BRANCH: master
   FEEDS_CONF: feeds.conf.default
   CONFIG_FILE: ${{ format('config/{0}.config', github.event.inputs.profile) }}
@@ -56,6 +56,8 @@ jobs:
 
     - name: Show hardware info
       run: |
+        echo "termcapinfo xterm* ti@:te@" >> ~/.screenrc
+        sudo sysctl -w net.ipv4.tcp_congestion_control=bbr
         chmod 755 ./scripts/show_hardware_info.sh
         ./scripts/show_hardware_info.sh
   
@@ -120,8 +122,6 @@ jobs:
         python3 -m pip install --upgrade pip setuptools wheel
         python3 -m pip install Unidecode
 
-
-
     - name: Clone source code
       working-directory: /mnt
       run: |
@@ -157,7 +157,6 @@ jobs:
         cd openwrt
         ./scripts/feeds install -a -f
 
-
     - name: remove warning
       run: |
         chmod 755 $GITHUB_WORKSPACE/scripts/diy-part.sh
@@ -169,19 +168,16 @@ jobs:
         chmod +x $DIY_P2_SH
         cd openwrt
         $GITHUB_WORKSPACE/$DIY_P2_SH
-        
-        
-    - name: SSH 调试有效时间6h! 连接后输入q 输入exit即可退出，自动继续后续编译流程
-      uses: mxschmitt/action-tmate@master
-      if: ${{ inputs.ssh || contains(github.event.action, 'ssh') }}
-      
       
     - name: make defconfig
       run: |
         cd openwrt
         make defconfig V=s
 
-       
+    - name: SSH 调试有效时间6h! 连接后输入q 输入exit即可退出，自动继续后续编译流程
+      uses: mxschmitt/action-tmate@master
+      if: ${{ inputs.ssh || contains(github.event.action, 'ssh') }}
+
     - name: 查看 openwrt 目录
       run: ls -la openwrt/
       
@@ -189,7 +185,6 @@ jobs:
       
            ls -la openwrt/.config
 
- 
     - name: 自动上传最新源码生成.config编译配置
       uses: actions/upload-artifact@main
       with:
@@ -208,7 +203,6 @@ jobs:
         restore-keys: |
           dl-${{ runner.os }}-
 
-
     - name: Download package
       run: |
         if [[ "${{ steps.cache-dl.outputs.cache-hit }}" == "true" ]]; then
@@ -220,20 +214,7 @@ jobs:
         cd openwrt
 
         echo "⬇️ Downloading..."
-        output=$(make download -j$(nproc) -k V=s 2>&1)
-
-        if echo "$output" | grep -qE "Hash verification failed|checksum mismatch|MD5.*mismatch|sha256sum.*WARNING"; then
-          echo "❌ Failed packages and their logs:"
-          echo "$output" | grep -E "Hash verification failed|checksum mismatch|MD5.*mismatch|sha256sum.*WARNING"
-          echo ""
-          echo "Detailed logs:"
-          echo "$output" | grep -E "Hash verification failed|checksum mismatch" | sed 's/.*failed for //;s/.*mismatch //' | while read f; do
-            pkg=$(basename "$f" | sed 's/\.[^.]*$//')
-            echo ""
-            echo "🔍 $pkg (file: $(basename "$f"))"
-            echo "$output" | grep -A10 -B5 "$pkg" || true
-          done
-        fi
+        make download -j1 V=s
       shell: bash
 
     - name: Compute toolchain hash
@@ -271,7 +252,6 @@ jobs:
         echo "max_size = 10G" > $HOME/.ccache/ccache.conf
         echo "compiler_check = string:${{ steps.tc_hash.outputs.hash }}" >> $HOME/.ccache/ccache.conf
 
-       
     - name: make -j$(nproc)
       id: compile
       run: |
@@ -280,35 +260,17 @@ jobs:
 
         export CCACHE_DIR=$HOME/.ccache
         export CCACHE_BASEDIR=$PWD
-
-        set +e
+        
         make -j$(nproc) CC="ccache gcc" CXX="ccache g++"
-        BUILD_EXIT=$?
-        set -e
-
-        if [ $BUILD_EXIT -eq 0 ]; then
-          echo "✅ 并行编译成功"
-        else
-          echo "⚠️ 并行编译失败，切换到单线程详细模式..."
-          set +e
-          make -j8 V=s CC="ccache gcc" CXX="ccache g++"
-          VERBOSE_EXIT=$?
-          set -e
-          exit $VERBOSE_EXIT
-        fi
 
         echo "✅ ccache 统计："
         ccache -s
 
         echo "status=success" >> $GITHUB_OUTPUT
-        grep '^CONFIG_TARGET.*DEVICE.*=y' .config | sed -r 's/.*DEVICE_(.*)=y/\1/' > DEVICE_NAME
-        [ -s DEVICE_NAME ] && echo "DEVICE_NAME=_$(cat DEVICE_NAME)" >> $GITHUB_ENV
+        DEVICE_NAME="openstick"
+        echo "DEVICE_NAME=_${DEVICE_NAME}" >> $GITHUB_ENV
         echo "FILE_DATE=_$(date +"%Y%m%d%H%M")" >> $GITHUB_ENV
       shell: bash
-
-
-
-
 
     - name: df -hT
       if: (!cancelled())
@@ -326,6 +288,7 @@ jobs:
       if: env.UPLOAD_FIRMWARE == 'true' && !cancelled()
       run: |
         cd openwrt/bin/targets/*/*
+        zip -r kmods.zip ./packages/
         rm -rf packages
         echo "FIRMWARE=$PWD" >> $GITHUB_ENV
         echo "status=success" >> $GITHUB_OUTPUT
@@ -349,8 +312,8 @@ jobs:
         echo "" >> release.txt
         {
           echo "## 高通8916系列 immortalwrt"
-          echo "- 管理地址: 192.168.100.1"
-          echo "  内核版本: $(grep -h "kmod-usb2" ${{ env.FIRMWARE }}/*.manifest 2>/dev/null | awk -F' - ' '{print $2}' | grep -oP '[5-6]\.[0-9]+\.[0-9]+' | head -1 || echo '未知')"
+          echo "- 管理地址: 192.168.1.1"
+          echo "  内核版本: $(grep -h "^kernel - " ${{ env.FIRMWARE }}/*.manifest 2>/dev/null | awk -F' - ' '{print $2}' || echo '未知')"
           echo "  默认用户: root"
           echo "  默认密码: 空"
           echo ""
@@ -369,8 +332,6 @@ jobs:
         cat file_list.txt
         test -s file_list.txt || { echo "::error::No firmware files found"; exit 1; }
 
-
-
     - name: Upload firmware to release
       if: env.UPLOAD_RELEASE == 'true' && steps.organize.outputs.status == 'success'
       uses: ncipollo/release-action@main
@@ -383,7 +344,7 @@ jobs:
         artifactErrorsFailBuild: false
         allowUpdates: true
         draft: false
-        prerelease: false
+        prerelease: true
 
     - name: Delete old workflow runs via GitHub API
       if: always()
