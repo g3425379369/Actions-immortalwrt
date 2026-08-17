@@ -142,16 +142,6 @@ jobs:
         cp -fv "${CONFIG_FILE}" openwrt/.config
         cd openwrt && make defconfig
         
-        
-    - name: Set multi-device config
-      run: |
-         cd openwrt/
-         sed -i 's/^# CONFIG_TARGET_MULTI_PROFILE is not set/CONFIG_TARGET_MULTI_PROFILE=y/' .config
-         for d in nokia_xg-040g-md-ubi nokia_xg-040g-md nokia_xg-140g-md nokia_xg-040g-tf nokia_xg-140g-tf; do
-           sed -i "s|^# CONFIG_TARGET_airoha_an7581_DEVICE_${d} is not set|CONFIG_TARGET_airoha_an7581_DEVICE_${d}=y|" .config
-         done
-         grep -E "MULTI_PROFILE|DEVICE_nokia" .config
-        
     - name: SSH 调试有效时间6h! 连接后输入q 输入exit即可退出，自动继续后续编译流程
       uses: mxschmitt/action-tmate@master
       if: ${{ inputs.ssh || contains(github.event.action, 'ssh') }}
@@ -186,6 +176,7 @@ jobs:
       id: compile
       run: |
         cd openwrt/
+        make defconfig
 
         if [[ "${{ inputs.log_switch }}" == "true" ]]; then
             make -j1 V=s
@@ -196,7 +187,8 @@ jobs:
             make -j4 V=s
         fi
 
-        echo "DEVICE_NAME=_MULTI" >> $GITHUB_ENV
+        grep '^CONFIG_TARGET.*DEVICE.*=y' .config | sed -r 's/.*DEVICE_(.*)=y/\1/' > DEVICE_NAME
+        [ -s DEVICE_NAME ] && echo "DEVICE_NAME=_$(cat DEVICE_NAME)" >> $GITHUB_ENV
         echo "FILE_DATE=_$(date +"%Y%m%d%H%M")" >> $GITHUB_ENV
         echo "status=success" >> $GITHUB_OUTPUT
 
@@ -222,10 +214,10 @@ jobs:
       if: env.UPLOAD_RELEASE == 'true' && steps.organize.outputs.status == 'success'
       run: |
         echo "release_tag=$(date +"%Y.%m.%d-%H%M")" >> $GITHUB_OUTPUT
-        echo "🚀 ImmortalWrt firmware (贝尔光猫多型号)" >> release.txt
+        echo "🚀 ImmortalWrt firmware (贝尔光猫)" >> release.txt
         echo "----------------------" >> release.txt
         echo "设备:" >> release.txt
-        grep '^CONFIG_TARGET.*DEVICE.*=y' ${{ github.workspace }}/openwrt/.config | sed -r 's/.*DEVICE_airoha_an7581_DEVICE_(.*)=y/  - \1/' >> release.txt
+        grep '^CONFIG_TARGET.*DEVICE.*=y' ${{ github.workspace }}/openwrt/.config | sed -r 's/.*DEVICE_(.*)=y/  - \1/' >> release.txt
         echo "时间: $(date +"%Y-%m-%d %H:%M")" >> release.txt
         echo "内核版本: $(grep -h "kmod-usb2" ${{ env.FIRMWARE }}/*.manifest 2>/dev/null | awk -F' - ' '{print $2}' | grep -oP '[5-6]\.[0-9]+\.[0-9]+' | head -1 || echo '未知')" >> release.txt
         echo "源码仓库: ${{ env.REPO_URL }}" >> release.txt
