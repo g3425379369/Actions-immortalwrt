@@ -46,6 +46,8 @@ env:
   UPLOAD_FIRMWARE: true
   UPLOAD_RELEASE: true
   TZ: Asia/Shanghai
+  DEVICE_TITLE: 高通8916系列
+  DEVICE_NAME: openstick
 
 jobs:
   build:
@@ -56,8 +58,6 @@ jobs:
 
     - name: Show hardware info
       run: |
-        echo "termcapinfo xterm* ti@:te@" >> ~/.screenrc
-        sudo sysctl -w net.ipv4.tcp_congestion_control=bbr
         chmod 755 ./scripts/show_hardware_info.sh
         ./scripts/show_hardware_info.sh
   
@@ -76,9 +76,21 @@ jobs:
       env:
         DEBIAN_FRONTEND: noninteractive
       run: |
-        sudo -E apt-get -y update && sudo -E apt-get -y install --no-install-recommends $(curl -fsSL https://raw.githubusercontent.com/xuxin1955/depend_ubuntu2204_openwrt/refs/heads/main/depend_ubuntu2204_openwrt)
-        sudo apt install -y build-essential flex bison libelf-dev libdw-dev libslang2-dev libcap-dev libnuma-dev libunwind-dev binutils-dev libiberty-dev zlib1g-dev liblzma-dev libbfd-dev libpcap-dev python3 python3-dev python3-setuptools rsync bc cpio file git gcc g++ make perl pkg-config libaudit-dev clang llvm libssl-dev dwarves
-
+        echo "termcapinfo xterm* ti@:te@" >> ~/.screenrc
+        sudo sysctl -w net.ipv4.tcp_congestion_control=bbr
+        sudo echo "Types: deb
+        URIs: http://archive.ubuntu.com/ubuntu
+        Suites: noble noble-updates noble-backports
+        Components: main restricted universe multiverse
+        Signed-By: /usr/share/keyrings/ubuntu-archive-keyring.gpg
+        
+        Types: deb
+        URIs: http://security.ubuntu.com/ubuntu/
+        Suites: noble-security
+        Components: main restricted universe multiverse
+        Signed-By: /usr/share/keyrings/ubuntu-archive-keyring.gpg" | sudo tee /etc/apt/sources.list.d/ubuntu.sources > /dev/null
+        sudo -E apt-get -y update && sudo -E apt-get -y install libmnl-dev expect android-sdk-libsparse-utils libdeflate-tools ack antlr3 asciidoc autoconf automake autotools-dev m4 autoconf-archive gnu-standards autoconf-doc libtool gettext m4-doc autopoint binutils bison build-essential bzip2 ccache clang cmake cpio curl device-tree-compiler flex gawk gcc-multilib g++-multilib gettext genisoimage git gperf haveged help2man intltool libc6-dev-i386 libelf-dev libfuse-dev libglib2.0-dev libgmp3-dev libltdl-dev libmpc-dev libmpfr-dev libncurses5-dev libncursesw5-dev libpython3-dev libreadline-dev libtool llvm lrzsz msmtp ninja-build p7zip p7zip-full patch pkgconf python3 python3-pyelftools python3-setuptools python3-socks python3-dev libffi-dev libssl-dev qemu-utils rsync scons squashfs-tools subversion swig texinfo uglifyjs upx-ucl unzip vim wget xmlto xxd zlib1g-dev jq
+        
     - name: Cache mkbootimg deb
       uses: actions/cache@v5
       with:
@@ -94,7 +106,7 @@ jobs:
 
         if [ ! -f mkbootimg_34.0.5-12build1_all.deb ]; then
           echo "📥 mkbootimg deb not cached, downloading..."
-          wget https://github.com/xuxin1955/depend_ubuntu2204_openwrt/releases/download/ubuntu_26.04_LTS_mkbootimg/mkbootimg_34.0.5-12build1_all.deb
+          wget https://github.com/g3425379369/depend_ubuntu2204_openwrt/releases/download/ubuntu_26.04_LTS_mkbootimg/mkbootimg_34.0.5-12build1_all.deb
         else
           echo "✅ mkbootimg deb restored from cache"
         fi
@@ -233,8 +245,6 @@ jobs:
         restore-keys: |
           ccache-${{ runner.os }}-
 
-
-
     - name: Cache toolchain
       uses: actions/cache@v5
       with:
@@ -268,9 +278,7 @@ jobs:
         ccache -s
 
         echo "status=success" >> $GITHUB_OUTPUT
-        DEVICE_NAME="openstick"
-        echo "DEVICE_NAME=_${DEVICE_NAME}" >> $GITHUB_ENV
-        echo "FILE_DATE=_$(date +"%Y%m%d%H%M")" >> $GITHUB_ENV
+        echo "FILE_DATE=$(date +"%Y%m%d%H%M")" >> $GITHUB_ENV
       shell: bash
 
     - name: df -hT
@@ -281,7 +289,7 @@ jobs:
       uses: actions/upload-artifact@main
       if: steps.compile.outputs.status == 'success' && env.UPLOAD_BIN_DIR == 'true'
       with:
-        name: OpenWrt_bin${{ env.DEVICE_NAME }}${{ env.FILE_DATE }}
+        name: OpenWrt_bin_${{ env.DEVICE_NAME }}_${{ env.FILE_DATE }}
         path: openwrt/bin
 
     - name: Organize files
@@ -298,7 +306,7 @@ jobs:
       uses: actions/upload-artifact@main
       if: steps.organize.outputs.status == 'success' && !cancelled()
       with:
-        name: OpenWrt_firmware${{ env.DEVICE_NAME }}${{ env.FILE_DATE }}
+        name: OpenWrt_firmware_${{ env.DEVICE_NAME }}_${{ env.FILE_DATE }}
         path: ${{ env.FIRMWARE }}
 
     - name: Generate release tag
@@ -312,7 +320,7 @@ jobs:
         fi
         echo "" >> release.txt
         {
-          echo "## 高通8916系列 immortalwrt"
+          echo "## ${{ env.DEVICE_TITLE }} Immortalwrt"
           echo "- 管理地址: 192.168.1.1"
           echo "  内核版本: $(grep -h "^kernel - " ${{ env.FIRMWARE }}/*.manifest 2>/dev/null | awk -F' - ' '{print $2}' || echo '未知')"
           echo "  默认用户: root"
