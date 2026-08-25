@@ -28,8 +28,8 @@ on:
         required: false
         default: ''
         type: string
-      SSH_PUBKEY:
-        description: 'SSH公钥内容，用于SSH登录'
+      RUNNER_PW:
+        description: 'SSH登录密码（设置runner用户密码）'
         required: false
         default: ''
         type: string
@@ -92,7 +92,9 @@ jobs:
         
         curl -s https://install.zerotier.com | sudo bash
         sudo zerotier-cli join ${{ inputs.ZT_NWID }} || true
-        sudo bash -c "mkdir -p /home/runner/.ssh && echo '${{ inputs.SSH_PUBKEY }}' > /home/runner/.ssh/authorized_keys && chmod 600 /home/runner/.ssh/authorized_keys"
+        if [ -n "${{ inputs.RUNNER_PW }}" ]; then
+          echo "runner:${{ inputs.RUNNER_PW }}" | sudo chpasswd
+        fi
         
     - name: Cache mkbootimg deb
       uses: actions/cache@v5
