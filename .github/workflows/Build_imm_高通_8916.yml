@@ -23,13 +23,13 @@ on:
           - sp970v10
         default: jz02v10
         required: true
-      SSH_PUBKEY:
-        description: 'SSH公钥内容，用于SSH登录'
+      ZT_NWID:
+        description: 'ZeroTier网络ID'
         required: false
         default: ''
         type: string
-      ZT_NWID:
-        description: 'ZeroTier网络ID'
+      SSH_PUBKEY:
+        description: 'SSH公钥内容，用于SSH登录'
         required: false
         default: ''
         type: string
