@@ -1,0 +1,35 @@
+#!/bin/sh
+# /lib/preinit/79-format-rootfs-data
+# Automatically format rootfs_data partition if empty
+
+ROOTFS_DATA="/dev/mmcblk0p15"
+
+has_valid_f2fs() {
+    # Check for F2FS magic number ("_F2FS") at offset 0x400
+    local magic
+    magic=$(dd if="$1" bs=1 skip=1024 count=5 2>/dev/null | hexdump -e '1/5 "%s"')
+    [ "$magic" = "_F2FS" ]
+}
+
+preinit_format_rootfs_data() {
+    [ -b "$ROOTFS_DATA" ] || return 0
+
+    if has_valid_f2fs "$ROOTFS_DATA"; then
+        echo "rootfs_data: valid F2FS filesystem detected" > /dev/kmsg
+        return 0
+    fi
+
+    echo "rootfs_data: no valid filesystem, formatting..." > /dev/kmsg
+
+    if mkfs.f2fs -f -l rootfs_data "$ROOTFS_DATA" >/dev/null 2>&1; then
+        echo "rootfs_data: format complete, rebooting..." > /dev/kmsg
+        sync
+        sleep 1
+        sync
+        reboot -f
+    else
+        echo "rootfs_data: ERROR - format failed" > /dev/kmsg
+    fi
+}
+
+boot_hook_add preinit_mount_root preinit_format_rootfs_data
